@@ -1,10 +1,13 @@
 CC = gcc
 CFLAGS = -Wall -g
 
-build: main.o
+build: main.o functions.o
 	$(CC) -o main $^
 
 main.o: main.c
+	$(CC) $(CFLAGS) -c $^
+
+functions.o: functions.c
 	$(CC) $(CFLAGS) -c $^
 
 run: build
