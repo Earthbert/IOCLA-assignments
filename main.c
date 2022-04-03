@@ -31,6 +31,7 @@ int add_last(void **arr, int *len, data_structure *data)
 
 int add_at(void **arr, int *len, data_structure *data, int index)
 {
+
 	char *last_p = *arr;  // will point to the end of the arr
 	char *add_p;  // will point to the data from index
 	for (int i = 0; i < *len; i++) {
@@ -60,7 +61,7 @@ void print_data(void *data, u_char type) {
 	printf("Tipul %d\n", type);
 	if (type == 1) {
 		char *name1 = data;
-		int8_t *bac1 = data + strlen(name1);
+		int8_t *bac1 = data + strlen(name1) + 1;
 		int8_t *bac2 = bac1 + sizeof(int8_t);
 		char *name2 = (char *)bac2 + sizeof(int8_t);
 		printf("%s pentru %s\n", name1, name2);
@@ -76,8 +77,8 @@ void print_data(void *data, u_char type) {
 	}
 	if (type == 3) {
 		char *name1 = data;
-		int32_t *bac1 = data + strlen(name1);
-		int32_t *bac2 = bac1 + sizeof(int32_t);
+		char *bac1 = data + strlen(name1) + 1;
+		char *bac2 = bac1 + sizeof(int32_t);
 		char *name2 = (char *)bac2 + sizeof(int32_t);
 		printf("%s pentru %s\n", name1, name2);
 		printf("%d\n%d\n", *bac1, *bac2);
@@ -86,7 +87,7 @@ void print_data(void *data, u_char type) {
 
 void find(void *data_block, int len, int index) 
 {
-	if (index < 0)
+	if (index < 0 || len <= 0)
 		return;
 	if (index >= len)
 		index = len - 1;
@@ -154,9 +155,8 @@ int pack_data(data_structure *data_s) {
 	if (type == 1) {
 		int8_t bac1, bac2;
 		scanf("%s %hhd %hhd %s", name1, &bac1, &bac2, name2);
-		char *data = data_s->data;
 		data_s->header->len = strlen(name1) + strlen(name2) + sizeof(bac1) + sizeof(bac2);
-		data = calloc(1, data_s->header->len);
+		char * data = calloc(1, data_s->header->len);
 		memcpy(data, name1, strlen(name1));
 		memcpy(data + strlen(name1), &bac1, sizeof(bac1));
 		memcpy(data + strlen(name1) + sizeof(bac1), &bac2, sizeof(bac2));
@@ -167,9 +167,8 @@ int pack_data(data_structure *data_s) {
 		int16_t bac1;
 		int32_t bac2;
 		scanf("%s %hd %d %s", name1, &bac1, &bac2, name2);
-		char *data = data_s->data;
 		data_s->header->len = strlen(name1) + strlen(name2) + sizeof(bac1) + sizeof(bac2);
-		data = calloc(1, data_s->header->len);
+		char *data = calloc(1, data_s->header->len);
 		memcpy(data, name1, strlen(name1));
 		memcpy(data + strlen(name1), &bac1, sizeof(bac1));
 		memcpy(data + strlen(name1) + sizeof(bac1), &bac2, sizeof(bac2));
@@ -179,13 +178,16 @@ int pack_data(data_structure *data_s) {
 	if (type == 3) {
 		int32_t bac1, bac2;
 		scanf("%s %d %d %s", name1, &bac1, &bac2, name2);
-		char *data = data_s->data;
-		data_s->header->len = strlen(name1) + strlen(name2) + sizeof(bac1) + sizeof(bac2);
-		data = calloc(1, data_s->header->len);
-		memcpy(data, name1, strlen(name1));
-		memcpy(data + strlen(name1), &bac1, sizeof(bac1));
+		printf("%ld %ld\n", strlen(name1), strlen(name2));
+		name1[strlen(name1)] = '\0';
+		name2[strlen(name2)] = '\0';
+		printf("%ld %ld\n", strlen(name1), strlen(name2));
+		data_s->header->len = strlen(name1) + strlen(name2) + 2 + sizeof(bac1) + sizeof(bac2);
+		char * data = calloc(1, data_s->header->len);
+		memcpy(data, name1, strlen(name1) + 1);
+		memcpy(data + strlen(name1) + 1, &bac1, sizeof(bac1));
 		memcpy(data + strlen(name1) + sizeof(bac1), &bac2, sizeof(bac2));
-		memcpy(data + strlen(name1) + sizeof(bac1) + sizeof(bac2), name2, strlen(name2));
+		memcpy(data + strlen(name1) + 1 +sizeof(bac1) + sizeof(bac2), name2, strlen(name2) + 1);
 		data_s->data = data;
 	}
 	free(name1);
@@ -205,7 +207,6 @@ int main() {
 	data_s->header = calloc(1, sizeof(head));
 
 	while (1) {
-		printf("%d\n", len);
 		scanf("%s", command);
 		if (!strcmp(command, "insert")) {
 			pack_data(data_s);
