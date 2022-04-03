@@ -33,10 +33,10 @@ int add_last(void **arr, int *len, data_structure *data)
 
 int add_at(void **arr, int *len, data_structure *data, int index)
 {
-	if (index < 0 || index > *len)
+	if (index < 0)
 		return 0;
 
-	if (index == *len) {
+	if (index >= *len) {
 		add_last(arr, len, data);
 		return 1;
 	}
@@ -99,6 +99,7 @@ void print_data(void *data, u_char type) {
 		printf("%s pentru %s\n", name1, name2);
 		printf("%d\n%d\n", *(int32_t *)bac1, *(int32_t *)bac2);
 	}
+	printf("\n");
 }
 
 void find(void *data_block, int len, int index) 
@@ -120,13 +121,12 @@ void find(void *data_block, int len, int index)
 
 int delete_at(void **arr, int *len, int index)
 {
-	if (index < 0)
+	if (index < 0 || index >= *len)
 		return 0;
-	if (index >= *len)
-		index = *len - 1;
 
-	char *last_p;
+	char *last_p = *arr;
 	char *del_p;
+
 	for (int i = 0; i < *len; i++) {
 		if (i == index)
 			del_p = last_p;
@@ -137,22 +137,14 @@ int delete_at(void **arr, int *len, int index)
 	u_int64_t arr_size = (uint64_t)last_p - (uint64_t)*arr;
 	head *del_s = (head *)del_p;
 	u_int64_t del_size = sizeof(head) + del_s->len;
-	u_int64_t remain_size = arr_size - ((uint64_t)del_p -(uint64_t)*arr);
+	u_int64_t remain_size = (uint64_t)del_p - (uint64_t)*arr;
 
-	char *buffer = calloc(1, remain_size);
-	if (buffer == NULL) {
-		fprintf(stderr, "Calloc error in delete_at");
-		return 0;
-	}
-	memcpy(buffer, del_p + del_size, remain_size);
+	char *tmp = malloc(arr_size - del_size);
 
-	char *tmp = realloc(*arr, arr_size - del_size);
-	if (buffer == NULL) {
-		fprintf(stderr, "Realloc error in delete_at");
-		return 0;
-	}
-	memcpy(buffer, tmp + (last_p - del_p), remain_size);
+	memcpy(tmp, *arr, remain_size);
+	memcpy(tmp + remain_size, del_p + del_size, arr_size - del_size - remain_size);
 
+	free(*arr);
 	*arr = tmp;
 	*len = *len - 1;
 	return 1;
@@ -186,10 +178,8 @@ int pack_data(data_structure *data_s) {
 	}
 	if (type == 3) {
 		scanf("%d", (int32_t *)(data + contor));
-		printf("Bac1 : %d\n", *(int32_t *)(data + contor));
 		contor = contor + sizeof(int32_t);
 		scanf("%d", (int32_t *)(data + contor));
-		printf("Bac2 : %d\n", *(int32_t *)(data + contor));
 		contor = contor + sizeof(int32_t);
 	}
 	
