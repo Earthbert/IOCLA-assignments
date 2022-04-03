@@ -4,7 +4,9 @@
 #include <inttypes.h>
 #include "structs.h"
 
-#define MAX_STRING_SIZE 256
+#define MAX_SIZE 256
+
+#define DEBUG
 
 int add_last(void **arr, int *len, data_structure *data)
 {
@@ -31,9 +33,17 @@ int add_last(void **arr, int *len, data_structure *data)
 
 int add_at(void **arr, int *len, data_structure *data, int index)
 {
+	if (index < 0 || index > *len)
+		return 0;
+
+	if (index == *len) {
+		add_last(arr, len, data);
+		return 1;
+	}
 
 	char *last_p = *arr;  // will point to the end of the arr
 	char *add_p;  // will point to the data from index
+
 	for (int i = 0; i < *len; i++) {
 		if (i == index)
 			add_p = last_p;
@@ -43,15 +53,21 @@ int add_at(void **arr, int *len, data_structure *data, int index)
 
 	// total nr of bytes of arr
 	u_int64_t arr_size = (u_int64_t)last_p - (u_int64_t)*arr;
-	char *tmp = realloc(*arr, arr_size + sizeof(head) + data->header->len);
+
+	char *tmp = malloc(arr_size + sizeof(head) + data->header->len);
 	if (tmp == NULL) {
 		fprintf(stderr, "Realloc error in add_at");
 		return 0;
 	}
 
-	u_int64_t add_size = (u_int64_t)last_p - (u_int64_t)*add_p;
-	memcpy(tmp + (arr_size - add_size), add_p, add_size);
+	uint64_t copy_size = (uint64_t)add_p - (uint64_t)*arr;
 
+	memcpy(tmp, *arr, copy_size);
+	memcpy(tmp + copy_size, data->header, sizeof(head));
+	memcpy(tmp + copy_size + sizeof(head), data->data, data->header->len);
+	memcpy(tmp + copy_size + sizeof(head) + data->header->len, add_p, arr_size - copy_size);
+
+	free(*arr);
 	*arr = (void *)tmp;
 	*len = *len + 1;
 	return 1;
@@ -61,27 +77,27 @@ void print_data(void *data, u_char type) {
 	printf("Tipul %d\n", type);
 	if (type == 1) {
 		char *name1 = data;
-		int8_t *bac1 = data + strlen(name1) + 1;
-		int8_t *bac2 = bac1 + sizeof(int8_t);
-		char *name2 = (char *)bac2 + sizeof(int8_t);
+		char *bac1 = data + strlen(name1) + 1;
+		char *bac2 = bac1 + sizeof(int8_t);
+		char *name2 = bac2 + sizeof(int8_t);
 		printf("%s pentru %s\n", name1, name2);
-		printf("%d\n%d\n", *bac1, *bac2);
+		printf("%hhd\n%hhd\n", *(int8_t *)bac1, *(int8_t *)bac2);
 	}
 	if (type == 2) {
 		char *name1 = data;
-		int16_t *bac1 = data + strlen(name1);
-		int32_t *bac2 = (int32_t *)bac1 + sizeof(int16_t);
-		char *name2 = (char *)bac2 + sizeof(int32_t);
+		char *bac1 = data + strlen(name1) + 1;
+		char *bac2 = bac1 + sizeof(int16_t);
+		char *name2 = bac2 + sizeof(int32_t);
 		printf("%s pentru %s\n", name1, name2);
-		printf("%d\n%d\n", *bac1, *bac2);
+		printf("%hd\n%d\n", *(int16_t *)bac1, *(int32_t *)bac2);
 	}
 	if (type == 3) {
 		char *name1 = data;
 		char *bac1 = data + strlen(name1) + 1;
 		char *bac2 = bac1 + sizeof(int32_t);
-		char *name2 = (char *)bac2 + sizeof(int32_t);
+		char *name2 = bac2 + sizeof(int32_t);
 		printf("%s pentru %s\n", name1, name2);
-		printf("%d\n%d\n", *bac1, *bac2);
+		printf("%d\n%d\n", *(int32_t *)bac1, *(int32_t *)bac2);
 	}
 }
 
@@ -146,52 +162,43 @@ int pack_data(data_structure *data_s) {
 	u_char type;
 	scanf("%hhd", &type);
 	data_s->header->type = type;
-	char *name1 = calloc(MAX_STRING_SIZE, sizeof(char));
-	if (!name1)
+
+	char *data = malloc(MAX_SIZE);
+	if (data == NULL)
 		return 0;
-	char *name2 = calloc(MAX_STRING_SIZE, sizeof(char));
-	if (!name2)
-		return 0;
+
+	int contor = 0;
+	scanf("%s", data);
+	data[strlen(data)] = '\0';
+	contor = contor + strlen(data) + 1;
+
 	if (type == 1) {
-		int8_t bac1, bac2;
-		scanf("%s %hhd %hhd %s", name1, &bac1, &bac2, name2);
-		data_s->header->len = strlen(name1) + strlen(name2) + sizeof(bac1) + sizeof(bac2);
-		char * data = calloc(1, data_s->header->len);
-		memcpy(data, name1, strlen(name1));
-		memcpy(data + strlen(name1), &bac1, sizeof(bac1));
-		memcpy(data + strlen(name1) + sizeof(bac1), &bac2, sizeof(bac2));
-		memcpy(data + strlen(name1) + sizeof(bac1) + sizeof(bac2), name2, strlen(name2));
-		data_s->data = data;
+		scanf("%hhd", (int8_t *)(data + contor));
+		contor = contor + sizeof(int8_t);
+		scanf("%hhd", (int8_t *)(data + contor));
+		contor = contor + sizeof(int8_t);
 	}
 	if (type == 2) {
-		int16_t bac1;
-		int32_t bac2;
-		scanf("%s %hd %d %s", name1, &bac1, &bac2, name2);
-		data_s->header->len = strlen(name1) + strlen(name2) + sizeof(bac1) + sizeof(bac2);
-		char *data = calloc(1, data_s->header->len);
-		memcpy(data, name1, strlen(name1));
-		memcpy(data + strlen(name1), &bac1, sizeof(bac1));
-		memcpy(data + strlen(name1) + sizeof(bac1), &bac2, sizeof(bac2));
-		memcpy(data + strlen(name1) + sizeof(bac1) + sizeof(bac2), name2, strlen(name2));
-		data_s->data = data;
+		scanf("%hd", (int16_t *)(data + contor));
+		contor = contor + sizeof(int16_t);
+		scanf("%d", (int32_t *)(data + contor));
+		contor = contor + sizeof(int32_t);
 	}
 	if (type == 3) {
-		int32_t bac1, bac2;
-		scanf("%s %d %d %s", name1, &bac1, &bac2, name2);
-		printf("%ld %ld\n", strlen(name1), strlen(name2));
-		name1[strlen(name1)] = '\0';
-		name2[strlen(name2)] = '\0';
-		printf("%ld %ld\n", strlen(name1), strlen(name2));
-		data_s->header->len = strlen(name1) + strlen(name2) + 2 + sizeof(bac1) + sizeof(bac2);
-		char * data = calloc(1, data_s->header->len);
-		memcpy(data, name1, strlen(name1) + 1);
-		memcpy(data + strlen(name1) + 1, &bac1, sizeof(bac1));
-		memcpy(data + strlen(name1) + sizeof(bac1), &bac2, sizeof(bac2));
-		memcpy(data + strlen(name1) + 1 +sizeof(bac1) + sizeof(bac2), name2, strlen(name2) + 1);
-		data_s->data = data;
+		scanf("%d", (int32_t *)(data + contor));
+		printf("Bac1 : %d\n", *(int32_t *)(data + contor));
+		contor = contor + sizeof(int32_t);
+		scanf("%d", (int32_t *)(data + contor));
+		printf("Bac2 : %d\n", *(int32_t *)(data + contor));
+		contor = contor + sizeof(int32_t);
 	}
-	free(name1);
-	free(name2);
+	
+	scanf("%s", data + contor);
+	contor = contor + strlen(data + contor) + 1;
+	data[contor] = '\0';
+
+	data_s->header->len = contor;
+	data_s->data = data;
 	return 1;
 }
 
@@ -200,7 +207,7 @@ int main() {
 	// good luck :)
 	void *arr = NULL;
 	int len = 0;
-	char *command = calloc(MAX_STRING_SIZE, sizeof(char));
+	char *command = calloc(MAX_SIZE, sizeof(char));
 
 	// will be used at input
 	data_structure *data_s = calloc(1, sizeof(data_structure));
