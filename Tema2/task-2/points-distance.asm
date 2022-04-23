@@ -22,9 +22,22 @@ points_distance:
    
     ;; Your code starts here
 
+    xor edx, edx
+    mov dx, word [ebx + point_size + point.x]
+    sub dx, word [ebx + point.x]
+    jnz distance_calculated
 
+    mov dx, word [ebx + point_size + point.y]
+    sub dx, word [ebx + point.y]
 
+distance_calculated:
+    
+    cmp dx, 0
+    jge distance_is_positive
+    NEG dx
 
+distance_is_positive:
+    mov [eax], edx
     ;; Your code ends here
     
     ;; DO NOT MODIFY
